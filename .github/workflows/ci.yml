@@ -61,5 +61,6 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
           cd /server/gateway
+          docker-compose down -v
           docker-compose pull
           docker-compose up -d
