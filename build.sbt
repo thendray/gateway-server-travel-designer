@@ -67,4 +67,4 @@ assembly / assemblyMergeStrategy := {
   case x => MergeStrategy.first
 }
 
-assembly / assemblyJarName := "main-travel-designer.jar"
+assembly / assemblyJarName := "gateway-travel-designer.jar"
