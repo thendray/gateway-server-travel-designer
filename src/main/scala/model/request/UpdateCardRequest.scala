@@ -1,6 +1,7 @@
 package model.request
 
 case class UpdateCardRequest(
+    cardId: Long,
     authorId: Long,
     routeId: Long,
     name: Option[String],

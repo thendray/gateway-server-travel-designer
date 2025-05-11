@@ -1,5 +1,5 @@
 package model.response
 
-import model.{RoutePointCard, Vote}
+case class VotesForCard(votes: List[VoteInfo])
 
-case class CardWithVote(card: RoutePointCard, vote: Option[Vote])
+case class VoteInfo(userName: String, mark: Int)

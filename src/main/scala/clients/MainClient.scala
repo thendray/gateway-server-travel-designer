@@ -2,15 +2,17 @@ package clients
 
 import io.circe.generic.auto._
 import model.request._
+import model.response.GetRouteMembersResponse.RouteMemberResponse
 import model.response.{
-  CardWithVote,
   FullRouteResponse,
   GetPointCardsResponse,
   GetRouteDetailsByDayResponse,
   GetRouteMembersResponse,
   GetUserRoutesResponse,
+  GetuserPointCardsResponse,
   SimpleCardResponse,
-  SimpleRouteResponse
+  SimpleRouteResponse,
+  VotesForCard
 }
 import model.{Route, RoutePointCard, Vote}
 import sttp.capabilities.WebSockets
@@ -91,17 +93,17 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
     }
   }
 
-  def getCardsWithUserVote(userId: Long, routeId: Long): Task[List[CardWithVote]] = {
+  def getVotesForCard(routeId: Long, cardId: Long): Task[VotesForCard] = {
     val sttpRequest = basicRequest
-      .get(uri"$baseUrl/vote/route-cards/$userId/$routeId")
-      .response(asJson[List[CardWithVote]])
+      .get(uri"$baseUrl/vote/$routeId/for-card/$cardId")
+      .response(asJson[VotesForCard])
 
     sttpRequest.send(backend).flatMap { response =>
       response.body match {
-        case Right(cards) =>
+        case Right(votes) =>
           ZIO.succeed {
-            println(s"Retrieved ${cards.size} cards with user votes")
-            cards
+            println(s"Retrieved ${votes.votes.size} votes")
+            votes
           }
         case Left(error) => ZIO.fail(new RuntimeException(s"Failed to get cards with user votes: $error"))
       }
@@ -135,10 +137,27 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
       response.body match {
         case Right(cardResponse) =>
           ZIO.succeed {
-            println(s"Card created successfully: $cardResponse")
+//            println(s"Card created successfully: $cardResponse")
             cardResponse
           }
         case Left(error) => ZIO.fail(new RuntimeException(s"Failed to create card: $error"))
+      }
+    }
+  }
+
+  def copyCard(request: CreateCardRequest): Task[SimpleCardResponse] = {
+    val sttpRequest = basicRequest
+      .post(uri"$baseUrl/card/copy-card")
+      .body(request)
+      .response(asJson[SimpleCardResponse])
+
+    sttpRequest.send(backend).flatMap { response =>
+      response.body match {
+        case Right(cardResponse) =>
+          ZIO.succeed {
+            cardResponse
+          }
+        case Left(error) => ZIO.fail(new RuntimeException(s"Failed to copy card: $error"))
       }
     }
   }
@@ -153,7 +172,7 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
       response.body match {
         case Right(cardResponse) =>
           ZIO.succeed {
-            println(s"Card updated successfully: $cardResponse")
+//            println(s"Card updated successfully: $cardResponse")
             cardResponse
           }
         case Left(error) => ZIO.fail(new RuntimeException(s"Failed to update card: $error"))
@@ -170,7 +189,7 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
       response.body match {
         case Right(card) =>
           ZIO.succeed {
-            println(s"Retrieved card: $card")
+//            println(s"Retrieved card: $card")
             card
           }
         case Left(error) => ZIO.fail(new RuntimeException(s"Failed to get card: $error"))
@@ -195,10 +214,10 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
     }
   }
 
-  def getUserRouteCards(routeId: Long, userId: Long): Task[GetPointCardsResponse] = {
+  def getUserRouteCards(routeId: Long, userId: Long): Task[GetuserPointCardsResponse] = {
     val sttpRequest = basicRequest
       .get(uri"$baseUrl/route/$routeId/user-cards/$userId")
-      .response(asJson[GetPointCardsResponse])
+      .response(asJson[GetuserPointCardsResponse])
 
     sttpRequest.send(backend).flatMap { response =>
       response.body match {
@@ -208,6 +227,24 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
             pointCardsResponse
           }
         case Left(error) => ZIO.fail(new RuntimeException(s"Failed to get user route cards: $error"))
+      }
+    }
+  }
+
+  def copyRoute(request: CopyRequest): Task[String] = {
+    val sttpRequest = basicRequest
+      .post(uri"$baseUrl/route/copy")
+      .body(request)
+      .response(asJson[String])
+
+    sttpRequest.send(backend).flatMap { response =>
+      response.body match {
+        case Right(result) =>
+          ZIO.succeed {
+            println(s"Copy route successfully: $result")
+            result
+          }
+        case Left(error) => ZIO.fail(new RuntimeException(s"Failed to copy route: $error"))
       }
     }
   }
@@ -230,6 +267,24 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
     }
   }
 
+  def deleteFavorite(request: AddToFavoriteRequest): Task[String] = {
+    val sttpRequest = basicRequest
+      .delete(uri"$baseUrl/card/favorite/del")
+      .body(request)
+      .response(asJson[String])
+
+    sttpRequest.send(backend).flatMap { response =>
+      response.body match {
+        case Right(result) =>
+          ZIO.succeed {
+            println(s"Delete favorite successfully: $result")
+            result
+          }
+        case Left(error) => ZIO.fail(new RuntimeException(s"Failed to add to favorites: $error"))
+      }
+    }
+  }
+
   def createRoute(route: Route): Task[SimpleRouteResponse] = {
     val sttpRequest = basicRequest
       .post(uri"$baseUrl/route/create")
@@ -242,6 +297,24 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
           ZIO.succeed {
             println(s"Route created successfully: $routeResponse")
             routeResponse
+          }
+        case Left(error) => ZIO.fail(new RuntimeException(s"Failed to create route: $error"))
+      }
+    }
+  }
+
+  def addSettings(request: ExtraSettings): Task[String] = {
+    val sttpRequest = basicRequest
+      .post(uri"$baseUrl/route/add/settings")
+      .body(request)
+      .response(asJson[String])
+
+    sttpRequest.send(backend).flatMap { response =>
+      response.body match {
+        case Right(response) =>
+          ZIO.succeed {
+            println(s"Add settings successfully: $response")
+            response
           }
         case Left(error) => ZIO.fail(new RuntimeException(s"Failed to create route: $error"))
       }
@@ -373,6 +446,7 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
     val sttpRequest = basicRequest
       .get(uri"$baseUrl/route/$routeId/members")
       .response(asJson[GetRouteMembersResponse])
+    println("Try to get route members")
 
     sttpRequest.send(backend).flatMap { response =>
       response.body match {
@@ -386,9 +460,41 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
     }
   }
 
+  def deleteRouteMember(routeId: Long, userId: Long): Task[String] = {
+    val sttpRequest = basicRequest
+      .delete(uri"$baseUrl/route/$routeId/member/$userId")
+      .response(asJson[String])
+
+    sttpRequest.send(backend).flatMap { response =>
+      response.body match {
+        case Right(response) =>
+          ZIO.succeed {
+            response
+          }
+        case Left(error) => ZIO.fail(new RuntimeException(s"Failed to delete route member: $error"))
+      }
+    }
+  }
+
+  def addRouteMember(routeId: Long, userId: Long): Task[RouteMemberResponse] = {
+    val sttpRequest = basicRequest
+      .put(uri"$baseUrl/route/$routeId/member/$userId")
+      .response(asJson[RouteMemberResponse])
+
+    sttpRequest.send(backend).flatMap { response =>
+      response.body match {
+        case Right(response) =>
+          ZIO.succeed {
+            response
+          }
+        case Left(error) => ZIO.fail(new RuntimeException(s"Failed to add route member: $error"))
+      }
+    }
+  }
+
   def addPointToRoute(request: AddPointToRouteRequest): Task[String] = {
     val sttpRequest = basicRequest
-      .post(uri"$baseUrl/route/add-to-rote")
+      .post(uri"$baseUrl/route/add-to-route")
       .body(request)
       .response(asJson[String])
 
@@ -406,7 +512,7 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
 
   def deletePointFromRoute(request: DeletePointFromRouteRequest): Task[String] = {
     val sttpRequest = basicRequest
-      .delete(uri"$baseUrl/route/delete-from-rote")
+      .delete(uri"$baseUrl/route/delete-from-route")
       .body(request)
       .response(asJson[String])
 
@@ -444,7 +550,5 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
 object MainClient {
 
   val live: URLayer[SttpBackend[Task, Any], MainClient] =
-    ZLayer.fromFunction((b: SttpBackend[Task, Any]) =>
-      new MainClient("http://localhost:8082/api", b)
-    )
+    ZLayer.fromFunction((b: SttpBackend[Task, Any]) => new MainClient("http://localhost:8082/api", b))
 }

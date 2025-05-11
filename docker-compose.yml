@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  gateway-travel-designer:
+    image: andrey8079/gateway-travel-designer:latest
+    ports:
+      - "8083:8083"
+    restart: always

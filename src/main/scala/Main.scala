@@ -1,21 +1,28 @@
+import cats.syntax.all._
+import ch.qos.logback.classic.{Level, Logger => LogbackLogger}
+import clients.{MainClient, RecommendationClient, UserClient}
+import handler.MyRouter
 import org.http4s._
 import org.http4s.blaze.server.BlazeServerBuilder
 import org.http4s.server.Router
+import org.slf4j.LoggerFactory
+import sttp.client3.asynchttpclient.zio.AsyncHttpClientZioBackend
 import sttp.tapir.server.http4s.ztapir.ZHttp4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import sttp.tapir.ztapir._
 import zio.interop.catz._
-import cats.syntax.all._
-import clients.{MainClient, UserClient}
-import handler.MyRouter
-import pureconfig.generic.auto._
-import sttp.capabilities.WebSockets
-import sttp.capabilities.zio.ZioStreams
-import sttp.client3.SttpBackend
-import sttp.client3.asynchttpclient.zio.AsyncHttpClientZioBackend
-import zio.{Scope, Task, ULayer, URLayer, ZIO, ZLayer}
+import zio.{Scope, Task, ZIO, ZLayer}
 
 object Main extends zio.ZIOAppDefault {
+  val asyncLogger = LoggerFactory.getLogger("org.asynchttpclient").asInstanceOf[LogbackLogger]
+  asyncLogger.setLevel(Level.WARN)
+
+  val asyncNettyLogger = LoggerFactory.getLogger("org.asynchttpclient.netty").asInstanceOf[LogbackLogger]
+  asyncNettyLogger.setLevel(Level.WARN)
+
+  val channelPoolLogger =
+    LoggerFactory.getLogger("org.asynchttpclient.netty.channel.DefaultChannelPool").asInstanceOf[LogbackLogger]
+  channelPoolLogger.setLevel(Level.WARN)
 
   type EnvIn = MyRouter
 
@@ -33,48 +40,61 @@ object Main extends zio.ZIOAppDefault {
       UserClient.live,
       MainClient.live,
       MyRouter.live,
+      RecommendationClient.live
     )
 
-  def getEndpoints(router: MyRouter):  List[ZServerEndpoint[Any, Any]] = {
-//    List(
-//      router.reg(),
-//      router.get(),
-//      router.delete(),
-//      router.log(),
-//      router.update()
-//    ).map(_.tag("User")) ++
+  def getEndpoints(router: MyRouter): List[ZServerEndpoint[Any, Any]] = {
     List(
-      router.createRoute,
-//      router.updateRoute,
-//      router.joinRoute,
-//      router.getRouteCards,
-//      router.getUserRoutes,
-//      router.getRoute,
-//      router.getRouteDetailsByDay,
-//      router.getRouteMembers,
-//      router.addPointToRoute,
-//      router.deletePointFromRoute,
-//      router.movePointInRoute,
-//      router.getUserRouteCards
-    )
-      .map(_.tag("Route"))
-//      List(
-//        router.createCard,
-//        router.getCard,
-//        router.updateCard,
-//        router.deleteCard,
-//        router.getFavoriteCards,
-//        router.addToFavorite
-//      ).map(_.tag("Card")) ++
-//      List(
-//        router.createVote,
-//        router.updateVote,
-//        router.getVote,
-//        router.deleteVote,
-//        router.getCardsWithUserVote,
-//        router.getCardsForVote
-//      )
-//        .map(_.tag("Vote"))
+      router.reg(),
+      router.get(),
+      router.delete(),
+      router.log(),
+      router.update()
+    ).map(_.tag("User")) ++
+      List(
+        router.createRoute,
+        router.addSettings,
+        router.updateRoute,
+        router.joinRoute,
+        router.getRouteCards,
+        router.getUserRoutes,
+        router.getRoute,
+        router.getRouteDetailsByDay,
+        router.addPointToRoute,
+        router.deletePointFromRoute,
+        router.movePointInRoute,
+        router.getUserRouteCards,
+        router.copyRoute
+      )
+        .map(_.tag("Route")) ++
+      List(
+        router.getRouteMembers,
+        router.addRouteMember,
+        router.deleteRouteMember
+      ).map(_.tag("Members")) ++
+      List(
+        router.createCard,
+        router.copyCard,
+        router.getCard,
+        router.updateCard,
+        router.deleteCard,
+        router.getFavoriteCards,
+        router.addToFavorite,
+        router.deleteFavorite
+      ).map(_.tag("Card")) ++
+      List(
+        router.createVote,
+        router.updateVote,
+        router.getVote,
+        router.deleteVote,
+        router.getVotesForCard,
+        router.getCardsForVote
+      )
+        .map(_.tag("Vote")) ++
+      List(
+        router.getRecPlaces,
+        router.getRecRoutes
+      ).map(_.tag("Recommendation"))
   }
 
   def run: ZIO[Environment with Scope, Any, Any] =

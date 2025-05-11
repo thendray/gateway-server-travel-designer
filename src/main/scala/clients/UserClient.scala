@@ -15,14 +15,14 @@ class UserClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
 
   def getUserById(userId: Long): Task[UserInfo] = {
     val request = basicRequest
-      .get(uri"$baseUrl/api/users/$userId")
+      .get(uri"$baseUrl/users/$userId")
       .response(asJson[UserInfo])
 
     request.send(backend).flatMap { response =>
       response.body match {
         case Right(userInfo) =>
           ZIO.succeed {
-            println(s"Get user info $userInfo")
+//            println(s"Get user info $userInfo")
             userInfo
           }
         case Left(error) => ZIO.fail(new RuntimeException(s"Failed to fetch user: $error"))
@@ -66,28 +66,10 @@ class UserClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
     }
   }
 
-//  def getUserById(userId: Int): Task[UserResponse] = {
-//    val sttpRequest = basicRequest
-//      .get(uri"$baseUrl/users/$userId")
-//      .response(asJson[UserResponse])
-//
-//    sttpRequest.send(backend).flatMap { response =>
-//      response.body match {
-//        case Right(userResponse) =>
-//          ZIO.succeed {
-//            println(s"Get user info: $userResponse")
-//            userResponse
-//          }
-//        case Left(error) => ZIO.fail(new RuntimeException(s"Failed to fetch user: $error"))
-//      }
-//    }
-//  }
-
   def updateUser(request: UserUpdateRequest): Task[Unit] = {
     val sttpRequest = basicRequest
       .put(uri"$baseUrl/users")
       .body(request)
-      .response(asJson[Unit])
 
     sttpRequest.send(backend).flatMap { response =>
       response.body match {
@@ -95,7 +77,9 @@ class UserClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
           ZIO.succeed {
             println("User updated successfully")
           }
-        case Left(error) => ZIO.fail(new RuntimeException(s"Failed to update user: $error"))
+        case Left(error) =>
+          println(s"Failed to update user: $error")
+          ZIO.fail(new RuntimeException(s"Failed to update user: $error"))
       }
     }
   }
@@ -122,10 +106,10 @@ object UserClient {
 
   val live: URLayer[SttpBackend[Task, Any], UserClient] =
     ZLayer.fromFunction((b: SttpBackend[Task, Any]) =>
-      new UserClient("http://localhost:8081", b)
+      new UserClient("http://localhost:8081/api", b)
     )
 
-  case class UserInfo(userId: Int, email: String, username: String)
+  case class UserInfo(userId: Int, email: String, username: String, profilePhoto: String)
 
   implicit val decoder: Decoder[UserInfo] = deriveDecoder[UserInfo]
   implicit val encoder: Encoder[UserInfo] = deriveEncoder[UserInfo]

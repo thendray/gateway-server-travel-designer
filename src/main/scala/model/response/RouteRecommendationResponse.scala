@@ -1,13 +1,12 @@
 package model.response
 
-import model.response.GetUserRoutesResponse.RouteResponse
+import model.response.RouteRecommendationResponse.RouteRecommendation
 
+case class RouteRecommendationResponse(routes: List[RouteRecommendation])
 
-case class GetUserRoutesResponse(routes: List[RouteResponse])
+object RouteRecommendationResponse {
 
-object GetUserRoutesResponse {
-
-  case class RouteResponse(
+  case class RouteRecommendation(
       id: Long,
       name: String,
       photos: List[String],
