@@ -550,5 +550,5 @@ class MainClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
 object MainClient {
 
   val live: URLayer[SttpBackend[Task, Any], MainClient] =
-    ZLayer.fromFunction((b: SttpBackend[Task, Any]) => new MainClient("http://localhost:8082/api", b))
+    ZLayer.fromFunction((b: SttpBackend[Task, Any]) => new MainClient("http://51.250.77.99:8082/api", b))
 }

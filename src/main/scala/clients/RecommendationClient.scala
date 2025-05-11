@@ -49,7 +49,7 @@ class RecommendationClient(baseUrl: String, backend: SttpBackend[Task, Any]) {
 object RecommendationClient {
 
   val live: URLayer[SttpBackend[Task, Any], RecommendationClient] =
-    ZLayer.fromFunction((b: SttpBackend[Task, Any]) => new RecommendationClient("http://localhost:8084", b))
+    ZLayer.fromFunction((b: SttpBackend[Task, Any]) => new RecommendationClient("http://51.250.77.99:8084", b))
 
   case class PlaceRecommendationResponse(cards: List[PlaceRecommendation])
 

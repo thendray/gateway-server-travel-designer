@@ -106,7 +106,7 @@ object UserClient {
 
   val live: URLayer[SttpBackend[Task, Any], UserClient] =
     ZLayer.fromFunction((b: SttpBackend[Task, Any]) =>
-      new UserClient("http://localhost:8081/api", b)
+      new UserClient("http://51.250.77.99:8081/api", b)
     )
 
   case class UserInfo(userId: Int, email: String, username: String, profilePhoto: String)
